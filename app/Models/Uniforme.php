@@ -13,12 +13,13 @@ class Uniforme extends Model
         'nombre',
         'descripcion',
         'categoria',
-        'foto_path', // Solo foto_path
         'tipo',
+        'foto_path' // si decides mantener el campo individual para compatibilidad
     ];
 
-    protected $hidden = [
-        'created_at',
-        'updated_at',
-    ];
+    // Relación de uno a muchos con UniformeFoto
+    public function fotos()
+    {
+        return $this->hasMany(UniformeFoto::class);
+    }
 }
