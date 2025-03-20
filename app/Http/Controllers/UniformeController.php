@@ -46,7 +46,6 @@ class UniformeController extends Controller
                 'descripcion' => 'required|string',
                 'categoria' => 'required|in:Industriales,Médicos,Escolares,Corporativos|string|max:255',
                 'tipo' => 'required|string|max:255',
-                // Validación para múltiples imágenes
                 'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
@@ -55,14 +54,12 @@ class UniformeController extends Controller
             $uniforme->descripcion = $validatedData['descripcion'];
             $uniforme->categoria = $validatedData['categoria'];
             $uniforme->tipo = $validatedData['tipo'];
-            // Si deseas mantener un campo individual (opcional)
             if ($request->hasFile('foto')) {
                 $path = $request->file('foto')->store('public/uploads');
                 $uniforme->foto_path = str_replace('public/', '', $path);
             }
             $uniforme->save();
 
-            // Procesar múltiples imágenes
             if ($request->hasFile('fotos')) {
                 foreach ($request->file('fotos') as $foto) {
                     $path = $foto->store('public/uploads');
@@ -92,21 +89,22 @@ class UniformeController extends Controller
         try {
             Log::info('Iniciando actualización de uniforme con ID: ' . $id, $request->all());
             $validatedData = $request->validate([
-                'nombre' => 'required|string|max:255',
-                'descripcion' => 'required|string',
-                'categoria' => 'required|in:Industriales,Médicos,Escolares,Corporativos|string|max:255',
-                'tipo' => 'required|string|max:255',
+                'nombre' => 'sometimes|required|string|max:255',
+                'descripcion' => 'sometimes|required|string',
+                'categoria' => 'sometimes|required|in:Industriales,Médicos,Escolares,Corporativos|string|max:255',
+                'tipo' => 'sometimes|required|string|max:255',
                 'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
             $uniforme = Uniforme::findOrFail($id);
-            $uniforme->nombre = $validatedData['nombre'];
-            $uniforme->descripcion = $validatedData['descripcion'];
-            $uniforme->categoria = $validatedData['categoria'];
-            $uniforme->tipo = $validatedData['tipo'];
+
+            // Actualizar solo los campos enviados
+            if ($request->has('nombre')) $uniforme->nombre = $request->input('nombre');
+            if ($request->has('descripcion')) $uniforme->descripcion = $request->input('descripcion');
+            if ($request->has('categoria')) $uniforme->categoria = $request->input('categoria');
+            if ($request->has('tipo')) $uniforme->tipo = $request->input('tipo');
             $uniforme->save();
 
-            // Procesar nuevas imágenes (se agregan a las existentes)
             if ($request->hasFile('fotos')) {
                 foreach ($request->file('fotos') as $foto) {
                     $path = $foto->store('public/uploads');
@@ -137,7 +135,6 @@ class UniformeController extends Controller
             Log::info('Iniciando eliminación de uniforme con ID: ' . $id);
             $uniforme = Uniforme::findOrFail($id);
 
-            // Eliminar las imágenes asociadas
             if ($uniforme->fotos()->count() > 0) {
                 foreach ($uniforme->fotos as $foto) {
                     Storage::delete('public/' . $foto->foto_path);
@@ -145,7 +142,6 @@ class UniformeController extends Controller
                 }
             }
 
-            // Opcional: eliminar foto_path individual
             if ($uniforme->foto_path) {
                 Storage::delete('public/' . $uniforme->foto_path);
             }
